@@ -1,0 +1,279 @@
+import { useState, useMemo } from 'react';
+
+const BrowseView = ({ isAuthenticated, onNavigateToUpload, onSignIn, onLogout }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSchool, setSelectedSchool] = useState('all');
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [selectedLevel, setSelectedLevel] = useState('all');
+  const [selectedPaper, setSelectedPaper] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Mock data - will be replaced with Appwrite data later
+  const mockPapers = [
+    {
+      id: '1',
+      question: 'What is the difference between var, let, and const in JavaScript?',
+      briefAnswer: 'var is function-scoped, let and const are block-scoped. const cannot be reassigned.',
+      detailedAnswer: 'In JavaScript, var is the oldest way to declare variables and is function-scoped, meaning it is accessible throughout the function it is declared in. let and const were introduced in ES6 and are block-scoped, meaning they are only accessible within the block they are declared in. The key difference between let and const is that let allows reassignment while const does not. However, const objects and arrays can still have their properties modified.',
+      department: 'Computer Science',
+      createdAt: '2024-11-10'
+    },
+    {
+      id: '2',
+      question: 'Explain the Pythagorean theorem and provide an example.',
+      briefAnswer: 'a² + b² = c² where c is the hypotenuse of a right triangle.',
+      detailedAnswer: 'The Pythagorean theorem states that in a right-angled triangle, the square of the length of the hypotenuse (the side opposite the right angle) equals the sum of squares of the other two sides. Formula: a² + b² = c². Example: If a right triangle has sides of length 3 and 4, the hypotenuse would be √(3² + 4²) = √(9 + 16) = √25 = 5.',
+      department: 'Mathematics',
+      createdAt: '2024-11-09'
+    },
+    {
+      id: '3',
+      question: 'What is Newton\'s Second Law of Motion?',
+      briefAnswer: 'F = ma (Force equals mass times acceleration)',
+      detailedAnswer: 'Newton\'s Second Law of Motion states that the acceleration of an object depends on the net force acting upon the object and the mass of the object. The formula F = ma describes this relationship, where F is force (in Newtons), m is mass (in kilograms), and a is acceleration (in meters per second squared). This means that heavier objects require more force to accelerate at the same rate as lighter objects.',
+      department: 'Physics',
+      createdAt: '2024-11-08'
+    },
+    {
+      id: '4',
+      question: 'What is the process of photosynthesis?',
+      briefAnswer: 'Plants convert light energy into chemical energy (glucose) using CO2 and water.',
+      detailedAnswer: 'Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize nutrients from carbon dioxide and water. It generally involves the green pigment chlorophyll and generates oxygen as a byproduct. The equation: 6CO2 + 6H2O + light energy → C6H12O6 + 6O2. This process occurs in two stages: light-dependent reactions (in thylakoids) and light-independent reactions or Calvin cycle (in stroma).',
+      department: 'Biology',
+      createdAt: '2024-11-07'
+    },
+    {
+      id: '5',
+      question: 'What are the main types of chemical bonds?',
+      briefAnswer: 'Ionic, covalent, and metallic bonds are the three main types.',
+      detailedAnswer: 'Chemical bonds are forces that hold atoms together. The three main types are: 1) Ionic bonds - formed when electrons are transferred from one atom to another, creating oppositely charged ions that attract each other. 2) Covalent bonds - formed when atoms share electrons. 3) Metallic bonds - formed between metal atoms where electrons are delocalized and shared among many atoms. Each type has distinct properties affecting melting points, conductivity, and solubility.',
+      department: 'Chemistry',
+      createdAt: '2024-11-06'
+    },
+  ];
+
+  const filteredQuestions = selectedDepartment === 'all' 
+    ? mockQuestions 
+    : mockQuestions.filter(q => q.department === selectedDepartment);
+
+  const handleQuestionClick = (question) => {
+    setSelectedQuestion(question);
+  };
+
+  const handleBackToList = () => {
+    setSelectedQuestion(null);
+  };
+
+  if (selectedQuestion) {
+    // Detail View
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Navigation Bar */}
+        <nav className="bg-white shadow-md">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span className="text-xl font-bold text-gray-800">AI Question Hub</span>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                {isAuthenticated && (
+                  <button 
+                    onClick={onLogout}
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+                  >
+                    Logout
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        {/* Detail Content */}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <button 
+            onClick={handleBackToList}
+            className="mb-6 flex items-center text-indigo-600 hover:text-indigo-700 font-medium"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to List
+          </button>
+
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="mb-4">
+              <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 text-sm font-medium rounded-full">
+                {selectedQuestion.department}
+              </span>
+            </div>
+            
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Question</h2>
+            <div className="prose max-w-none mb-8 p-4 bg-gray-50 rounded-lg text-gray-700">
+              {selectedQuestion.question}
+            </div>
+            
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Brief Answer</h3>
+            <div className="prose max-w-none mb-8 p-4 bg-blue-50 rounded-lg text-gray-700">
+              {selectedQuestion.briefAnswer}
+            </div>
+            
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Detailed Answer</h3>
+            <div className="prose max-w-none p-4 bg-green-50 rounded-lg text-gray-700">
+              {selectedQuestion.detailedAnswer}
+            </div>
+
+            <div className="mt-6 text-sm text-gray-500">
+              Posted on {new Date(selectedQuestion.createdAt).toLocaleDateString()}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // List View
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Navigation Bar */}
+      <nav className="bg-white shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-8">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span className="text-xl font-bold text-gray-800">AI Question Hub</span>
+              </div>
+              
+              <div className="hidden md:flex space-x-4">
+                <button className="px-4 py-2 rounded-lg font-medium text-indigo-600 bg-indigo-50">
+                  Browse
+                </button>
+                {isAuthenticated && (
+                  <button 
+                    onClick={onNavigateToUpload}
+                    className="px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-50"
+                  >
+                    Upload
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              {!isAuthenticated ? (
+                <button 
+                  onClick={onSignIn}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                >
+                  Sign In to Upload
+                </button>
+              ) : (
+                <button 
+                  onClick={onLogout}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+                >
+                  Logout
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Browse Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">Question Library</h2>
+            <p className="text-gray-600 mt-1">
+              {isAuthenticated 
+                ? 'Browse and explore questions. You can also upload your own!' 
+                : 'Browsing as guest. Sign in to upload questions.'}
+            </p>
+          </div>
+          
+          {/* Filter Dropdown */}
+          <div className="w-full sm:w-64">
+            <label htmlFor="filterDepartment" className="block text-sm font-medium text-gray-700 mb-2">
+              Filter by Department
+            </label>
+            <select 
+              id="filterDepartment" 
+              value={selectedDepartment}
+              onChange={(e) => setSelectedDepartment(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="all">All Departments</option>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Mathematics">Mathematics</option>
+              <option value="Physics">Physics</option>
+              <option value="Chemistry">Chemistry</option>
+              <option value="Biology">Biology</option>
+              <option value="Engineering">Engineering</option>
+              <option value="Business">Business</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Questions List */}
+        <div className="space-y-4">
+          {filteredQuestions.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-lg shadow">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No questions found</h3>
+              <p className="mt-1 text-sm text-gray-500">Try selecting a different department.</p>
+            </div>
+          ) : (
+            filteredQuestions.map((question) => (
+              <div 
+                key={question.id}
+                onClick={() => handleQuestionClick(question)}
+                className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer p-6"
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 text-xs font-medium rounded-full">
+                    {question.department}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(question.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                
+                <h3 className="text-lg font-semibold text-gray-800 mb-2 line-clamp-2">
+                  {question.question}
+                </h3>
+                
+                <p className="text-gray-600 text-sm line-clamp-2">
+                  <span className="font-medium">Brief Answer:</span> {question.briefAnswer}
+                </p>
+
+                <div className="mt-4 flex items-center text-indigo-600 text-sm font-medium">
+                  View Details
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BrowseView;
