@@ -9,7 +9,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.j
 const UploadView = ({ onNavigateToBrowse, onLogout }) => {
   const [uploadMethod, setUploadMethod] = useState('camera'); // 'camera' or 'file'
   const [cameraActive, setCameraActive] = useState(false);
-  const [capturedImages, setCapturedImages] = useState([]); // Changed to array for multiple images
+  const [capturedImage, setCapturedImage] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [extractedText, setExtractedText] = useState('');
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
@@ -126,57 +126,33 @@ const UploadView = ({ onNavigateToBrowse, onLogout }) => {
       context.drawImage(video, 0, 0);
       
       const imageData = canvas.toDataURL('image/png');
+      setCapturedImage(imageData);
+      stopCamera();
       
-      // Add to captured images array
-      setCapturedImages(prev => [...prev, {
-        id: Date.now(),
-        data: imageData,
-        processed: false
-      }]);
-      
-      // Don't stop camera - allow taking more pictures
+      // Start OCR processing
+      processOCR(imageData);
     }
   };
 
-  const finishCapturing = () => {
-    stopCamera();
-    processAllImages();
-  };
-
-  const processAllImages = async () => {
-    if (capturedImages.length === 0) {
-      alert('Please capture at least one image.');
-      return;
-    }
-
+  const processOCR = async (imageData) => {
     setIsProcessingOCR(true);
     
-    // Simulate OCR processing for all images
+    // Simulate OCR processing (will be replaced with Tesseract.js)
     setTimeout(() => {
-      const mockTexts = [
-        "Question 1: What is the difference between a compiler and an interpreter in programming languages?",
-        "Question 2: Explain the concept of object-oriented programming.",
-        "Question 3: What are the main differences between SQL and NoSQL databases?"
-      ];
-      
-      // Combine text from all images
-      const combinedText = capturedImages.map((_, index) => 
-        mockTexts[index % mockTexts.length]
-      ).join('\n\n');
-      
-      setExtractedText(combinedText);
+      const mockExtractedText = "What is the difference between a compiler and an interpreter in programming languages?";
+      setExtractedText(mockExtractedText);
       setIsProcessingOCR(false);
     }, 2000);
   };
 
-  const removeImage = (id) => {
-    setCapturedImages(prev => prev.filter(img => img.id !== id));
-  };
-
-  const clearAllImages = () => {
-    setCapturedImages([]);
+  const retakePicture = () => {
+    setCapturedImage(null);
     setExtractedText('');
     setAnswers(null);
+    setSelectedDepartment('');
+    if (uploadMethod === 'camera') {
+      startCamera();
+    }
   };
 
   const handleClearFile = () => {
@@ -289,8 +265,8 @@ const UploadView = ({ onNavigateToBrowse, onLogout }) => {
             </h3>
             
             <div className="space-y-4">
-              <div className="flex gap-4 flex-wrap items-center">
-                {!cameraActive && capturedImages.length === 0 && (
+              <div className="flex gap-4 flex-wrap">
+                {!cameraActive && !capturedImage && (
                   <button 
                     onClick={startCamera}
                     className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center"
@@ -304,39 +280,26 @@ const UploadView = ({ onNavigateToBrowse, onLogout }) => {
                 )}
                 
                 {cameraActive && (
-                  <>
-                    <button 
-                      onClick={takePicture}
-                      className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center"
-                    >
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Take Picture
-                    </button>
-                    {capturedImages.length > 0 && (
-                      <button 
-                        onClick={finishCapturing}
-                        className="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center"
-                      >
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Done ({capturedImages.length} photo{capturedImages.length !== 1 ? 's' : ''})
-                      </button>
-                    )}
-                  </>
-                )}
-
-                {capturedImages.length > 0 && !cameraActive && (
                   <button 
-                    onClick={clearAllImages}
-                    className="px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center"
+                    onClick={takePicture}
+                    className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center"
                   >
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Clear All & Retake
+                    Take Picture
+                  </button>
+                )}
+
+                {capturedImage && (
+                  <button 
+                    onClick={retakePicture}
+                    className="px-6 py-3 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors flex items-center"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Retake
                   </button>
                 )}
               </div>
@@ -350,42 +313,17 @@ const UploadView = ({ onNavigateToBrowse, onLogout }) => {
                     playsInline
                     className="w-full max-w-2xl rounded-lg border-4 border-indigo-300"
                   />
-                  {capturedImages.length > 0 && (
-                    <div className="absolute top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow-lg">
-                      {capturedImages.length} photo{capturedImages.length !== 1 ? 's' : ''} captured
-                    </div>
-                  )}
                 </div>
               )}
 
-              {/* Captured Images Grid */}
-              {capturedImages.length > 0 && !cameraActive && (
-                <div>
-                  <p className="text-sm font-medium text-gray-700 mb-3">
-                    Captured {capturedImages.length} page{capturedImages.length !== 1 ? 's' : ''}
-                  </p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {capturedImages.map((image, index) => (
-                      <div key={image.id} className="relative group">
-                        <img 
-                          src={image.data} 
-                          alt={`Question page ${index + 1}`} 
-                          className="w-full h-48 object-cover rounded-lg border-2 border-green-300"
-                        />
-                        <div className="absolute top-2 left-2 bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
-                          {index + 1}
-                        </div>
-                        <button
-                          onClick={() => removeImage(image.id)}
-                          className="absolute top-2 right-2 bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+              {/* Captured Image */}
+              {capturedImage && (
+                <div className="relative">
+                  <img 
+                    src={capturedImage} 
+                    alt="Captured question" 
+                    className="w-full max-w-2xl rounded-lg border-4 border-green-300"
+                  />
                 </div>
               )}
 
@@ -394,27 +332,10 @@ const UploadView = ({ onNavigateToBrowse, onLogout }) => {
             </div>
           </div>
 
-          {/* Step 2: Process Images Button */}
-          {capturedImages.length > 0 && !extractedText && !isProcessingOCR && (
-            <div className="mb-8">
-              <button
-                onClick={processAllImages}
-                className="px-8 py-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center text-lg"
-              >
-                <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Process {capturedImages.length} Image{capturedImages.length !== 1 ? 's' : ''} with OCR
-              </button>
-            </div>
-          )}
-
-          {/* Step 3: Extracted Text Section */}
+          {/* Step 2: Extracted Text Section */}
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <span className="flex items-center justify-center w-8 h-8 bg-indigo-600 text-white rounded-full mr-3 text-sm">
-                {capturedImages.length > 0 ? '3' : '2'}
-              </span>
+              <span className="flex items-center justify-center w-8 h-8 bg-indigo-600 text-white rounded-full mr-3 text-sm">2</span>
               Review Extracted Text
             </h3>
             
@@ -436,12 +357,10 @@ const UploadView = ({ onNavigateToBrowse, onLogout }) => {
             )}
           </div>
 
-          {/* Step 4: Generate Answers Section */}
+          {/* Step 3: Generate Answers Section */}
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <span className="flex items-center justify-center w-8 h-8 bg-indigo-600 text-white rounded-full mr-3 text-sm">
-                {capturedImages.length > 0 ? '4' : '3'}
-              </span>
+              <span className="flex items-center justify-center w-8 h-8 bg-indigo-600 text-white rounded-full mr-3 text-sm">3</span>
               Generate Answers
             </h3>
             
@@ -485,13 +404,11 @@ const UploadView = ({ onNavigateToBrowse, onLogout }) => {
             )}
           </div>
 
-          {/* Step 5: Save Section */}
+          {/* Step 4: Save Section */}
           {answers && (
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <span className="flex items-center justify-center w-8 h-8 bg-indigo-600 text-white rounded-full mr-3 text-sm">
-                  {capturedImages.length > 0 ? '5' : '4'}
-                </span>
+                <span className="flex items-center justify-center w-8 h-8 bg-indigo-600 text-white rounded-full mr-3 text-sm">4</span>
                 Save to Hub
               </h3>
               
